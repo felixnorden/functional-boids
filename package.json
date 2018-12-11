@@ -1,0 +1,19 @@
+{
+  "name": "functional-boids",
+  "version": "1.0.0",
+  "description": "A functionally programmed simulation of the Boids model in PureScript",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/felixnorden/functional-boids.git"
+  },
+  "author": "Felix Nordén and Tuyen Ngo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/felixnorden/functional-boids/issues"
+  },
+  "homepage": "https://github.com/felixnorden/functional-boids#readme"
+}
