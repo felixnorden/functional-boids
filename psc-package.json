@@ -2,5 +2,12 @@
   "name": "functional-boids",
   "set": "psc-0.12.1",
   "source": "https://github.com/purescript/package-sets.git",
-  "depends": ["console", "prelude"]
+  "depends": [
+    "arrays",
+    "console",
+    "lists",
+    "prelude",
+    "psci-support",
+    "semirings"
+  ]
 }
