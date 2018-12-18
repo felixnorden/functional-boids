@@ -5,6 +5,7 @@
   "depends": [
     "arrays",
     "console",
+    "integers",
     "lists",
     "prelude",
     "psci-support",
