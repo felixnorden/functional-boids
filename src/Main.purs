@@ -1,11 +1,16 @@
 module Main where
 
+import Control.Monad.State
+import Control.Monad.State.Class
+import Prelude
+
 import Boid (Boid, acceleration, alignment, cohesion, separation, visibilitySphere)
 import Data.List (List(..), (:))
 import Data.Tuple (Tuple(..), fst, snd)
 import Effect (Effect, whileE)
 import Effect.Console (log, logShow)
-import Prelude (Unit(..), show, ($), (*), (<$>), discard, pure, unit, (+), bind)
+import Effect.Ref (modify', modify_, new, read, write)
+import Prelude (Unit(..), show, ($), (*), (<$>), discard, pure, unit, (+), bind, (<<<))
 import Vector (Vector(..), scalarMul)
 
 -- Parameters for the model to be tweaked to our liking
@@ -48,6 +53,9 @@ boid3 = Tuple z x
 listOfBoids :: List Boid
 listOfBoids = boid1:boid2:boid3:Nil
 
+initialState :: State (List Boid) Unit
+initialState = put listOfBoids
+
 -- Application of parameters
 cohesion' :: Boid -> List Boid -> Vector Number
 cohesion' = cohesion timeStep
@@ -64,13 +72,23 @@ acceleration' = acceleration weightConstants
 main :: Effect Unit
 main = do
   log "** Boid Simulation **"
-  next listOfBoids
+  ref <- new listOfBoids
+  whileE (pure true) do
+    state <- read ref
+    logShow state
+    modify_ iteration ref 
+    pure unit
   log "** End of Simulation **"
-    where next :: List Boid -> Effect Unit
-          next boids = do logShow boids
-                          let nextBoids = iteration boids
-                          next nextBoids                     
+  
 
+forever :: Effect(List Boid) -> Effect(List Boid)
+forever boids = do 
+  boids' <- boids
+  logShow boids'
+  forever <<< pure <<< iteration $ boids'
+      -- where forever' :: List Boid -> List Boid
+      --       forever' Nil	  = Nil
+      --       forever' boids' = forever' (pure(iteration boids'))
 
 iteration :: List Boid -> List Boid
 iteration boids = iterate <$> boids

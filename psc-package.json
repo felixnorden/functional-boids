@@ -5,6 +5,7 @@
   "depends": [
     "arrays",
     "console",
+    "effect",
     "integers",
     "lists",
     "prelude",
