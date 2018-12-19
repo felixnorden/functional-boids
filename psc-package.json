@@ -9,6 +9,7 @@
     "lists",
     "prelude",
     "psci-support",
+    "quickcheck",
     "semirings"
   ]
 }
