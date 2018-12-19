@@ -107,4 +107,7 @@ output
 ### Mac OS ###
 .DS_STORE
 
+### All js bundles ###
+/**/bundle.js
+
 # End of https://www.gitignore.io/api/node,purescript,visualstudiocode
