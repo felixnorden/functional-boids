@@ -110,4 +110,5 @@ output
 ### All js bundles ###
 /**/bundle.js
 
+dist/Main.js
 # End of https://www.gitignore.io/api/node,purescript,visualstudiocode
