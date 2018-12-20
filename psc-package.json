@@ -9,9 +9,11 @@
     "effect",
     "integers",
     "lists",
+    "pipes",
     "prelude",
     "psci-support",
     "quickcheck",
-    "semirings"
+    "semirings",
+    "signal"
   ]
 }
