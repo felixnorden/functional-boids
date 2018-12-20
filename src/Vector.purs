@@ -14,8 +14,11 @@ import Data.Ring ((+), (*), (-), add, mul, negate, class Ring)
 import Data.Semigroup ((<>))
 import Data.Semiring (class Semiring, zero, one)
 import Data.Show (class Show, show)
+import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable (unfoldr)
+import Effect (Effect)
+import Effect.Random (randomRange)
 import Math (round, sqrt)
 import Prelude ((/), bind, (<<<))
 import Test.QuickCheck.Arbitrary (class Arbitrary)
@@ -73,6 +76,16 @@ averageV :: List (Vector Number) -> Vector Number
 averageV vecs = scalarMul scalar totalSum
   where scalar = 1.0 / (toNumber $ length vecs)
         totalSum = sumV vecs
+
+randomVector :: Int -> Number -> Number -> Effect (Vector Number)
+randomVector dim from to = do list <- sequence $ unfoldr nextRand dim
+                              pure (V list)
+  where nextRand :: Int -> Maybe (Tuple (Effect Number) Int)
+        nextRand n | n <= 0    = Nothing
+                   | otherwise = Just (Tuple r (n-1))
+        r = randomRange from to               
+                              
+
 
 -- | Properties and tests
 

@@ -2,12 +2,15 @@ module Boid where
 
 import Data.Eq ((/=))
 import Data.Function (($))
-import Data.Functor ((<$>))
-import Data.List (List(..), filter, zipWith, (:))
+import Data.Functor (map, (<$>))
+import Data.List (List(..), filter, zipWith, (:), (..))
 import Data.Ring ((*))
-import Data.Tuple (Tuple, fst, snd)
-import Prelude ((/), (<), (<<<))
-import Vector (Vector, absV, averageV, scalarMul, subV, sumV)
+import Data.Traversable (sequence)
+import Data.Tuple (Tuple(..), fst, snd)
+import Effect (Effect)
+import Effect.Random (randomRange)
+import Prelude ((/), (<), (<<<), bind, pure)
+import Vector (Vector, absV, averageV, randomVector, scalarMul, subV, sumV)
 
 
 -- type Acceleration = Vector Number
@@ -49,3 +52,13 @@ separation timeStep boid boids = scalarMul scalar totalDistance
 -- (c = cohesion, l = alignment, s = separation)
 acceleration :: List Number -> Vector Number -> Vector Number -> Vector Number -> Vector Number
 acceleration constants c l s = sumV $ zipWith scalarMul constants (c:l:s:Nil)
+
+randomBoid :: Int -> Number -> Number -> Number -> Number -> Effect Boid
+randomBoid dim xFrom xTo vFrom vTo = do pos <- randomVector dim xFrom xTo
+                                        vel <- randomVector dim vFrom vTo
+                                        pure $ Tuple pos vel
+
+randomBoids :: (Int -> Effect Boid) -> Int -> Effect (List Boid)
+randomBoids boidFactory n = sequence $ map boidFactory (1..n)
+                               
+                                   
