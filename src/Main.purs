@@ -1,26 +1,26 @@
 module Main where
 
-import Web.DOM
 
 import Boid (Boid, acceleration, alignment, cohesion, randomBoid, randomBoids, separation, visibilitySphere)
 import BoidDrawing as Drawing
+import Data.Int (fromString)
 import Data.List (List(..), (:))
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..), fst, snd)
 import Effect (Effect)
-import Effect.Console (log, logShow)
-import Graphics.Canvas (Context2D, getCanvasElementById, getContext2D)
-import Prelude (Unit, bind, const, discard, negate, pure, unit, ($), (<$>), (<<<), (=<<))
+import Effect.Console (log)
+import Graphics.Canvas (CanvasElement, Context2D, getCanvasElementById, getContext2D)
+import Prelude (Unit, bind, const, discard, negate, pure, unit, ($), (<$>), (=<<))
+import Signal (Signal, get)
 import Signal (foldp, runSignal) as S
+import Signal.Channel (Channel, channel, send, subscribe)
 import Signal.DOM (animationFrame) as S
 import Vector (Vector, addV, scalarMul)
-import Web.DOM.Node (parentElement)
 import Web.DOM.NonElementParentNode (getElementById)
-import Web.Event.Event (currentTarget)
+import Web.Event.Event as E
 import Web.Event.EventTarget (EventListener, addEventListener, eventListener)
 import Web.HTML (window)
-import Web.HTML.Event.EventTypes (change)
-import Web.HTML.HTMLAreaElement (target)
+import Web.HTML.Event.EventTypes (change, click)
 import Web.HTML.HTMLButtonElement as Buttons
 import Web.HTML.HTMLDocument (toNonElementParentNode)
 import Web.HTML.HTMLInputElement as Inputs
@@ -79,8 +79,18 @@ acceleration' = acceleration weightConstants
 boidFactory :: forall a. a -> Effect Boid
 boidFactory = const (randomBoid dims xMin xMax vMin vMax)
 
-slideEvent :: Effect EventListener
-slideEvent = eventListener \slide -> log "slide"
+slideEvent :: Channel (List Boid) ->  Effect EventListener
+slideEvent ch = eventListener \slide -> do
+  slider <- pure $ Inputs.fromEventTarget =<< E.currentTarget slide
+  case slider of
+    Just slider -> do slideValue <- Inputs.value slider
+                      log slideValue
+                      intVal <- pure $ fromString slideValue
+                      case intVal of
+                        Just val -> do boids <- randomBoids boidFactory val
+                                       send ch boids
+                        Nothing -> pure unit                                   
+    Nothing -> pure unit
 
 main :: Effect Unit
 main = do
@@ -96,23 +106,41 @@ main = do
 
   let resetBtn' = Buttons.fromElement =<< resetBtn
   let slider' = Inputs.fromElement =<< slider
+
+
+  boids <- randomBoids boidFactory 60 
+  boidChannel <- channel (boids)
   
+  let subscription = subscribe boidChannel
+  case resetBtn' of
+    Just btn -> do 
+      handler <- eventListener \click -> do
+                  btn <- pure $ Buttons.fromEventTarget =<< E.currentTarget click
+                  case btn of
+                    Just btn' -> do drawCanvas subscription canvas
+                    Nothing -> pure unit
+      addEventListener click handler false (Buttons.toEventTarget btn)                                     
+      pure unit
+    Nothing -> pure unit    
+
   case slider' of
     Just slider' -> do
-      handler <- slideEvent
+      handler <- slideEvent boidChannel
       addEventListener change handler false (Inputs.toEventTarget slider')
-    Nothing -> pure unit    
-  boids <- randomBoids boidFactory 60 
-  
-  case canvas of 
+    Nothing -> pure unit
+
+  drawCanvas subscription canvas
+  log "** End of Simulation **"
+
+drawCanvas :: Signal (List Boid) -> Maybe CanvasElement -> Effect Unit
+drawCanvas boids canvas = case canvas of 
     Just canvas -> do 
       ctx <- getContext2D canvas
       frames <- S.animationFrame
-      let simulation = S.foldp (const iteration) boids frames
+      currentBoids <- get boids
+      let simulation = S.foldp (const iteration) currentBoids frames
       S.runSignal (render ctx <$> simulation)
     Nothing -> pure unit
-  log "** End of Simulation **"
-  
 
 iteration :: List Boid -> List Boid
 iteration boids = iterate <$> boids
