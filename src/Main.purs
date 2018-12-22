@@ -1,17 +1,30 @@
 module Main where
 
+import Web.DOM
+
 import Boid (Boid, acceleration, alignment, cohesion, randomBoid, randomBoids, separation, visibilitySphere)
 import BoidDrawing as Drawing
 import Data.List (List(..), (:))
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..), fst, snd)
 import Effect (Effect)
-import Effect.Console (log)
+import Effect.Console (log, logShow)
 import Graphics.Canvas (Context2D, getCanvasElementById, getContext2D)
-import Prelude (Unit, bind, const, discard, negate, pure, unit, (<$>))
+import Prelude (Unit, bind, const, discard, negate, pure, unit, ($), (<$>), (<<<), (=<<))
 import Signal (foldp, runSignal) as S
 import Signal.DOM (animationFrame) as S
 import Vector (Vector, addV, scalarMul)
+import Web.DOM.Node (parentElement)
+import Web.DOM.NonElementParentNode (getElementById)
+import Web.Event.Event (currentTarget)
+import Web.Event.EventTarget (EventListener, addEventListener, eventListener)
+import Web.HTML (window)
+import Web.HTML.Event.EventTypes (change)
+import Web.HTML.HTMLAreaElement (target)
+import Web.HTML.HTMLButtonElement as Buttons
+import Web.HTML.HTMLDocument (toNonElementParentNode)
+import Web.HTML.HTMLInputElement as Inputs
+import Web.HTML.Window (document)
 
 -- Parameters for the model to be tweaked to our liking
 xMin :: Number
@@ -49,36 +62,6 @@ visibility_radius = 150.0
 
 weightConstants :: List Number
 weightConstants = weight_cohesion : weight_alignment : weight_separation : Nil
------ Some hardcoded boids -----
--- x :: Vector Number
--- x = V (380.0:300.0:Nil)
-
--- y :: Vector Number
--- y = V (400.0:260.0:Nil)
-
--- z :: Vector Number
--- z = V (420.0:280.0:Nil)
-
--- u :: Vector Number
--- u = V (415.0:255.0:Nil)
-
--- v :: Vector Number
--- v = V (0.5: 1.0:Nil)
-
--- boid1 :: Boid
--- boid1 = Tuple x v 
-
--- boid2 :: Boid
--- boid2 = Tuple y v 
-
--- boid3 :: Boid
--- boid3 = Tuple z v 
-
--- boid4 :: Boid
--- boid4 = Tuple u v 
-
--- listOfBoids :: List Boid
--- listOfBoids = boid1:boid2:boid3:boid4:Nil
 
 -- Application of parameters
 cohesion' :: Boid -> List Boid -> Vector Number
@@ -96,12 +79,31 @@ acceleration' = acceleration weightConstants
 boidFactory :: forall a. a -> Effect Boid
 boidFactory = const (randomBoid dims xMin xMax vMin vMax)
 
+slideEvent :: Effect EventListener
+slideEvent = eventListener \slide -> log "slide"
+
 main :: Effect Unit
 main = do
   log "** Boid Simulation **"
-  -- ref <- new listOfBoids
+  browser <- window
+  doc <- document browser 
+
+  let parentElement = toNonElementParentNode doc
+
   canvas <- getCanvasElementById "canvas"
+  slider <- getElementById "slider" parentElement
+  resetBtn <- getElementById "resetBtn" parentElement
+
+  let resetBtn' = Buttons.fromElement =<< resetBtn
+  let slider' = Inputs.fromElement =<< slider
+  
+  case slider' of
+    Just slider' -> do
+      handler <- slideEvent
+      addEventListener change handler false (Inputs.toEventTarget slider')
+    Nothing -> pure unit    
   boids <- randomBoids boidFactory 60 
+  
   case canvas of 
     Just canvas -> do 
       ctx <- getContext2D canvas
