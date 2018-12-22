@@ -2,9 +2,17 @@
 <html>
   <head>
     <title>Functional-boids</title>
+    <link rel="stylesheet" href="../style/style.css">
   </head>
   <body>
-    <canvas id="canvas" width="1280" height="940" style="border: 1px solid tomato"></canvas>
+
+    <main>
+      <canvas id="canvas" class="canvas" width="1280" height="940" style="border: 1px solid tomato"></canvas>
+      <div class="slidecontainer">
+        <input type="range" min="1" max="100" value="50" class="slider" id="slider">
+        <button id="resetBtn">Reset</button>
+      </div>
+    </main>
     <script type="text/javascript" src="../dist/Main.js"></script>
   </body>
 </html>
