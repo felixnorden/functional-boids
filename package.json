@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "pulp --psc-package build -O --to dist/Main.js && cp -rf html dist/html && cp -rf style dist/style",
-    "build:watch": "nodemon --exec 'npm run build' -e 'purs'"
+    "build:watch": "nodemon --exec 'npm run build' -e 'purs'",
+    "prod": "psc-package install && npm run build"
   },
   "repository": {
     "type": "git",
@@ -20,5 +21,10 @@
   "homepage": "https://github.com/felixnorden/functional-boids#readme",
   "devDependencies": {
     "nodemon": "^1.18.9"
+  },
+  "dependencies": {
+    "psc-package": "^3.0.1",
+    "pulp": "^12.3.0",
+    "purescript": "^0.12.1"
   }
 }
