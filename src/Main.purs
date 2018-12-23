@@ -4,17 +4,15 @@ module Main where
 import Boid (Boid, acceleration, alignment, cohesion, randomBoid, randomBoids, separation, visibilitySphere)
 import BoidDrawing as Drawing
 import Data.Int (fromString)
-import Data.List (List(..), (:))
+import Data.List (List(..), (:), length)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..), fst, snd)
 import Effect (Effect)
 import Effect.Console (log)
 import Graphics.Canvas (CanvasElement, Context2D, getCanvasElementById, getContext2D)
 import Prelude (Unit, bind, const, discard, negate, pure, unit, ($), (<$>), (=<<))
-import Signal (Signal, get)
-import Signal (foldp, runSignal) as S
+import Signal (get)
 import Signal.Channel (Channel, channel, send, subscribe)
-import Signal.DOM (animationFrame) as S
 import Vector (Vector, addV, scalarMul)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.Event.Event as E
@@ -24,7 +22,7 @@ import Web.HTML.Event.EventTypes (change, click)
 import Web.HTML.HTMLButtonElement as Buttons
 import Web.HTML.HTMLDocument (toNonElementParentNode)
 import Web.HTML.HTMLInputElement as Inputs
-import Web.HTML.Window (document)
+import Web.HTML.Window (document, requestAnimationFrame)
 
 -- Parameters for the model to be tweaked to our liking
 xMin :: Number
@@ -44,9 +42,6 @@ dims = 2
 
 timeStep :: Number
 timeStep = 1.0
-
-modifier :: Number
-modifier = 3.0
 
 weight_cohesion :: Number
 weight_cohesion = 0.02
@@ -107,8 +102,7 @@ main = do
   let resetBtn' = Buttons.fromElement =<< resetBtn
   let slider' = Inputs.fromElement =<< slider
 
-
-  boids <- randomBoids boidFactory 60 
+  boids <- randomBoids boidFactory 50 
   boidChannel <- channel (boids)
   
   let subscription = subscribe boidChannel
@@ -117,31 +111,39 @@ main = do
       handler <- eventListener \click -> do
                   btn <- pure $ Buttons.fromEventTarget =<< E.currentTarget click
                   case btn of
-                    Just btn' -> do drawCanvas subscription canvas
+                    Just btn' -> do 
+                      currentBoids <- get subscription
+                      newBoids <- randomBoids boidFactory $ length currentBoids
+                      send boidChannel newBoids
+                      pure unit
                     Nothing -> pure unit
-      addEventListener click handler false (Buttons.toEventTarget btn)                                     
+      addEventListener click handler false $ Buttons.toEventTarget btn
       pure unit
     Nothing -> pure unit    
 
   case slider' of
     Just slider' -> do
       handler <- slideEvent boidChannel
-      addEventListener change handler false (Inputs.toEventTarget slider')
+      addEventListener change handler false $ Inputs.toEventTarget slider'
     Nothing -> pure unit
 
-  drawCanvas subscription canvas
-  log "** End of Simulation **"
-
-drawCanvas :: Signal (List Boid) -> Maybe CanvasElement -> Effect Unit
-drawCanvas boids canvas = case canvas of 
+  case canvas of
     Just canvas -> do 
-      ctx <- getContext2D canvas
-      frames <- S.animationFrame
-      currentBoids <- get boids
-      let simulation = S.foldp (const iteration) currentBoids frames
-      S.runSignal (render ctx <$> simulation)
-    Nothing -> pure unit
+      drawCanvas boidChannel canvas
+    Nothing -> pure unit    
+    
 
+drawCanvas :: Channel (List Boid) -> CanvasElement -> Effect Unit
+drawCanvas boids canvas = do 
+  ctx <- getContext2D canvas
+  let subscription = subscribe boids
+  currentBoids <- get subscription
+  send boids $ iteration currentBoids
+  render ctx currentBoids
+  window <- window
+  _ <- requestAnimationFrame (drawCanvas boids canvas) window
+  pure unit
+  
 iteration :: List Boid -> List Boid
 iteration boids = iterate <$> boids
   where iterate boid = Tuple pos' vel'
